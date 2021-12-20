@@ -66,5 +66,5 @@ pub async fn run() {
     });
 }
 
-const WIDTH: u32 = 1024;
+const WIDTH: u32 = 1280;
 const HEIGHT: u32 = 720;
