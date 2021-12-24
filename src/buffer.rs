@@ -40,6 +40,19 @@ pub const PENTAGON_VERTICES: &[Vertex] = &[
   Vertex { position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
 ];
 
+pub const RECT_VERTICES: &[Vertex] = &[
+  Vertex { position: [0.0, 0.5, 0.0], color: [0.5, 0.5, 0.5] }, // A
+  Vertex { position: [0.0, -0.5, 0.0], color: [0.5, 0.5, 0.5] }, // B
+  Vertex { position: [0.5, -0.5, 0.0], color: [0.5, 0.5, 0.5] }, // C
+  Vertex { position: [0.5, 0.5, 0.0], color: [0.5, 0.5, 0.5] }, // D
+];
+
+pub const RECT_INDICES: &[u16] = &[
+  0, 1, 3,
+  3, 1, 2,
+  0,
+];
+
 pub const PENTAGON_INDICES: &[u16] = &[
   0, 1, 4,
   1, 2, 4,

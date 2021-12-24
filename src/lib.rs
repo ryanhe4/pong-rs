@@ -1,8 +1,8 @@
 mod renderer;
 mod buffer;
+mod component;
 
 use env_logger::Env;
-use log::info;
 use winit::{
   event::{Event, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode},
   event_loop::{ControlFlow, EventLoop},

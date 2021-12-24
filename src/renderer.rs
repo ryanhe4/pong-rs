@@ -4,14 +4,13 @@ use winit::{
   window::WindowBuilder,
 };
 
-use cgmath::*;
 use log::{info};
-use wgpu::SamplerDescriptor;
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
-use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event::{WindowEvent};
 use crate::{WIDTH, HEIGHT, buffer};
 use crate::buffer::{PENTAGON_INDICES, TRIANGLE_VERTICES};
+use crate::component::*;
 
 // Renderer Struct Interface
 pub struct Renderer {
@@ -22,11 +21,7 @@ pub struct Renderer {
   pub(crate) size: winit::dpi::PhysicalSize<u32>,
   pub window: Window,
   render_pipeline: wgpu::RenderPipeline,
-  vertex_buffer: wgpu::Buffer,
-  index_buffer: wgpu::Buffer,
-  num_vertices: u32,
-  num_indices: u32,
-  is_triangle: bool,
+  rect: Rectangle,
 }
 
 impl Renderer {
@@ -74,24 +69,6 @@ impl Renderer {
         push_constant_ranges: &[],
       });
 
-    let vertex_buffer = device.create_buffer_init(
-      &wgpu::util::BufferInitDescriptor {
-        label: Some("Vertex Buffer"),
-        contents: bytemuck::cast_slice(buffer::PENTAGON_VERTICES),
-        usage: wgpu::BufferUsages::VERTEX,
-      }
-    );
-    let num_vertices = TRIANGLE_VERTICES.len() as u32;
-
-    let index_buffer = device.create_buffer_init(
-      &wgpu::util::BufferInitDescriptor {
-        label: Some("Index Buffer"),
-        contents: bytemuck::cast_slice(buffer::PENTAGON_INDICES),
-        usage: wgpu::BufferUsages::INDEX,
-      }
-    );
-    let num_indices = buffer::PENTAGON_INDICES.len() as u32;
-
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
       label: Some("Render Pipeline"),
       layout: Some(&render_pipeline_layout),
@@ -132,8 +109,7 @@ impl Renderer {
       }),
       multiview: None,
     });
-
-    let is_triangle = false;
+    let rect: Rectangle = Rectangle::new(&device, Point { x: 0.0, y: 0.0 }, 100, 100, None);
 
     Self {
       window,
@@ -143,11 +119,7 @@ impl Renderer {
       config,
       size,
       render_pipeline,
-      vertex_buffer,
-      num_vertices,
-      index_buffer,
-      num_indices,
-      is_triangle,
+      rect,
     }
   }
 
@@ -179,28 +151,9 @@ impl Renderer {
       _ => false,
     }
   }
-  pub fn update(&mut self) {
-    self.is_triangle = !self.is_triangle;
-    if self.is_triangle {
-      let vertex_buffer = self.device.create_buffer_init(
-        &wgpu::util::BufferInitDescriptor {
-          label: Some("Vertex Buffer"),
-          contents: bytemuck::cast_slice(buffer::TRIANGLE_VERTICES),
-          usage: wgpu::BufferUsages::VERTEX,
-        }
-      );
-      self.vertex_buffer = vertex_buffer;
-    } else {
-      let vertex_buffer = self.device.create_buffer_init(
-        &wgpu::util::BufferInitDescriptor {
-          label: Some("Vertex Buffer"),
-          contents: bytemuck::cast_slice(buffer::PENTAGON_VERTICES),
-          usage: wgpu::BufferUsages::VERTEX,
-        }
-      );
-      self.vertex_buffer = vertex_buffer;
-    }
-  }
+
+  pub fn update(&mut self) {}
+
   pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
     let output = self.surface.get_current_texture()?;
     let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -232,14 +185,10 @@ impl Renderer {
       // 1.Layout을 설정한 pipeline을 지정.
       render_pass.set_pipeline(&self.render_pipeline);
       // 2. render pass에 미리 정의된 vertex_buffer를 입력
-      render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-      render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+      render_pass.set_vertex_buffer(0, self.rect.vertex_buffer.slice(..));
+      render_pass.set_index_buffer(self.rect.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
-      if self.is_triangle {
-        render_pass.draw(0..self.num_vertices, 0..1);
-      } else {
-        render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
-      }
+      render_pass.draw_indexed(0..self.rect.num_indices, 0, 0..1);
       // render_pass.draw(0..self.num_vertices, 0..1);
     }
 
