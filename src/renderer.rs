@@ -157,8 +157,8 @@ impl Renderer {
     let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
       label: Some("Render encoder"),
     });
-    let rect: Rectangle = Rectangle::new(&self.device, Point { x: 0.0, y: 0.0 }, 50, 50, None);
-    let rect2: Rectangle = Rectangle::new(&self.device, Point { x: 980.0, y: 0.0 }, 300, 300, None);
+    let rect: Rectangle = Rectangle::new(&self.device, Point { x: 0.0, y: 360.0 }, 1280, 1, None);
+    let rect2: Rectangle = Rectangle::new(&self.device, Point { x: 640.0, y: 0.0 }, 1, 720, None);
     {
       // Render Block
       let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -183,7 +183,7 @@ impl Renderer {
       // 1.Layout을 설정한 pipeline을 지정.
       render_pass.set_pipeline(&self.render_pipeline);
       // 2. render pass에 미리 정의된 vertex_buffer를 입력
-      draw_rect(&mut render_pass, &self.rect);
+      // draw_rect(&mut render_pass, &self.rect);
       draw_rect(&mut render_pass, &rect);
       draw_rect(&mut render_pass, &rect2);
       // render_pass.draw(0..self.num_vertices, 0..1);
@@ -201,5 +201,5 @@ fn draw_rect<'a>(render_pass: &mut wgpu::RenderPass<'a>, rect: &'a Rectangle) {
   render_pass.set_vertex_buffer(0, rect.vertex_buffer.slice(..));
   render_pass.set_index_buffer(rect.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
   render_pass.draw_indexed(0..rect.num_indices, 0, 0..1);
-  todo!("Inside Render Or Other")
+  // todo!("Inside Render Or Other")
 }

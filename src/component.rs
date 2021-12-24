@@ -22,10 +22,10 @@ impl Rectangle {
   pub fn new(device: &wgpu::Device, point: Point, width: u32, height: u32, color: Option<f32>) -> Self {
     // info!("Create Object Component::Renderer::New() width: {}, height: {}", width, height);
     let vertices: &[Vertex] = &[
-      Vertex { position: [(point.x - 640.0) / 640.0, (point.y + 360.0) / 360.0, 0.0], color: [0.5, 0.5, 0.5] }, // A
-      Vertex { position: [(point.x - 640.0) / 640.0, (point.y - height as f32 + 360.0) / 360.0, 0.0], color: [0.5, 0.5, 0.5] }, // B
-      Vertex { position: [(point.x + width as f32 - 640.0) / 640.0, (point.y - height as f32 + 360.0) / 360.0, 0.0], color: [0.5, 0.5, 0.5] }, // C
-      Vertex { position: [(point.x + width as f32 - 640.0) / 640.0, (point.y + 360.0) / 360.0, 0.0], color: [0.5, 0.5, 0.5] }, // D
+      Vertex { position: [(point.x - 640.0) / 640.0, (-point.y + 360.0) / 360.0, 0.0], color: [0.5, 0.5, 0.5] }, // A
+      Vertex { position: [(point.x - 640.0) / 640.0, (-point.y - height as f32 + 360.0) / 360.0, 0.0], color: [0.5, 0.5, 0.5] }, // B
+      Vertex { position: [(point.x + width as f32 - 640.0) / 640.0, (-point.y - height as f32 + 360.0) / 360.0, 0.0], color: [0.5, 0.5, 0.5] }, // C
+      Vertex { position: [(point.x + width as f32 - 640.0) / 640.0, (-point.y + 360.0) / 360.0, 0.0], color: [0.5, 0.5, 0.5] }, // D
     ];
     let vertex_buffer = device.create_buffer_init(
       &wgpu::util::BufferInitDescriptor {

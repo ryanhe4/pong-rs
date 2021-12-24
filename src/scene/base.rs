@@ -6,3 +6,8 @@ trait Draw {
   fn draw();
   fn add_component();
 }
+
+enum EScene {
+  Home,
+  Nothome,
+}
