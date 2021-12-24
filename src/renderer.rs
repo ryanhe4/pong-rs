@@ -109,7 +109,7 @@ impl Renderer {
       }),
       multiview: None,
     });
-    let rect: Rectangle = Rectangle::new(&device, Point { x: 0.0, y: 0.0 }, 100, 100, None);
+    let rect: Rectangle = Rectangle::new(&device, Point { x: 640.0, y: 0.0 }, 100, 100, None);
 
     Self {
       window,
@@ -129,9 +129,6 @@ impl Renderer {
       self.config.width = new_size.width;
       self.config.height = new_size.height;
       self.surface.configure(&self.device, &self.config);
-    }
-    if new_size.width != 1024 || new_size.height != 720 {
-      info!("Size is not 1024x720");
     }
   }
   pub fn input(&mut self, event: &WindowEvent) -> bool {
@@ -160,7 +157,8 @@ impl Renderer {
     let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
       label: Some("Render encoder"),
     });
-
+    let rect: Rectangle = Rectangle::new(&self.device, Point { x: 0.0, y: 0.0 }, 50, 50, None);
+    let rect2: Rectangle = Rectangle::new(&self.device, Point { x: 980.0, y: 0.0 }, 300, 300, None);
     {
       // Render Block
       let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -185,10 +183,9 @@ impl Renderer {
       // 1.Layout을 설정한 pipeline을 지정.
       render_pass.set_pipeline(&self.render_pipeline);
       // 2. render pass에 미리 정의된 vertex_buffer를 입력
-      render_pass.set_vertex_buffer(0, self.rect.vertex_buffer.slice(..));
-      render_pass.set_index_buffer(self.rect.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-
-      render_pass.draw_indexed(0..self.rect.num_indices, 0, 0..1);
+      draw_rect(&mut render_pass, &self.rect);
+      draw_rect(&mut render_pass, &rect);
+      draw_rect(&mut render_pass, &rect2);
       // render_pass.draw(0..self.num_vertices, 0..1);
     }
 
@@ -198,4 +195,11 @@ impl Renderer {
 
     Ok(())
   }
+}
+
+fn draw_rect<'a>(render_pass: &mut wgpu::RenderPass<'a>, rect: &'a Rectangle) {
+  render_pass.set_vertex_buffer(0, rect.vertex_buffer.slice(..));
+  render_pass.set_index_buffer(rect.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+  render_pass.draw_indexed(0..rect.num_indices, 0, 0..1);
+  todo!("Inside Render Or Other")
 }

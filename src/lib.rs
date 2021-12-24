@@ -1,6 +1,7 @@
 mod renderer;
 mod buffer;
 mod component;
+mod scene;
 
 use env_logger::Env;
 use winit::{
