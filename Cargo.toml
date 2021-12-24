@@ -13,3 +13,4 @@ pollster = "0.2.4"
 cgmath = "0.18"
 log = "0.4"
 image = "0.23"
+bytemuck = { version = "1.7.3", features = ["derive"] }

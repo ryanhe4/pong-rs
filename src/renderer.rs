@@ -7,10 +7,13 @@ use winit::{
 use cgmath::*;
 use log::{info};
 use wgpu::SamplerDescriptor;
+use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
-use crate::{WIDTH, HEIGHT};
+use crate::{WIDTH, HEIGHT, buffer};
+use crate::buffer::{PENTAGON_INDICES, TRIANGLE_VERTICES};
 
+// Renderer Struct Interface
 pub struct Renderer {
   surface: wgpu::Surface,
   device: wgpu::Device,
@@ -19,8 +22,11 @@ pub struct Renderer {
   pub(crate) size: winit::dpi::PhysicalSize<u32>,
   pub window: Window,
   render_pipeline: wgpu::RenderPipeline,
-  ch_render_pipeline: wgpu::RenderPipeline,
-  use_color: bool,
+  vertex_buffer: wgpu::Buffer,
+  index_buffer: wgpu::Buffer,
+  num_vertices: u32,
+  num_indices: u32,
+  is_triangle: bool,
 }
 
 impl Renderer {
@@ -67,13 +73,36 @@ impl Renderer {
         bind_group_layouts: &[],
         push_constant_ranges: &[],
       });
+
+    let vertex_buffer = device.create_buffer_init(
+      &wgpu::util::BufferInitDescriptor {
+        label: Some("Vertex Buffer"),
+        contents: bytemuck::cast_slice(buffer::PENTAGON_VERTICES),
+        usage: wgpu::BufferUsages::VERTEX,
+      }
+    );
+    let num_vertices = TRIANGLE_VERTICES.len() as u32;
+
+    let index_buffer = device.create_buffer_init(
+      &wgpu::util::BufferInitDescriptor {
+        label: Some("Index Buffer"),
+        contents: bytemuck::cast_slice(buffer::PENTAGON_INDICES),
+        usage: wgpu::BufferUsages::INDEX,
+      }
+    );
+    let num_indices = buffer::PENTAGON_INDICES.len() as u32;
+
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
       label: Some("Render Pipeline"),
       layout: Some(&render_pipeline_layout),
       vertex: wgpu::VertexState {
         module: &shader,
         entry_point: "vs_main",
-        buffers: &[],
+        buffers: &[wgpu::VertexBufferLayout {
+          array_stride: std::mem::size_of::<buffer::Vertex>() as wgpu::BufferAddress, // 1.
+          step_mode: wgpu::VertexStepMode::Vertex, // 2.
+          attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
+        }],
       },
       primitive: wgpu::PrimitiveState {
         topology: wgpu::PrimitiveTopology::TriangleList, // 1.
@@ -103,42 +132,8 @@ impl Renderer {
       }),
       multiview: None,
     });
-    let ch_render_pipeline =
-      device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("Render Pipeline2"),
-        layout: Some(&render_pipeline_layout),
-        vertex: wgpu::VertexState {
-          module: &shader,
-          entry_point: "vs_challenge",
-          buffers: &[],
-        },
-        fragment: Some(wgpu::FragmentState {
-          module: &shader,
-          entry_point: "fs_challenge",
-          targets: &[wgpu::ColorTargetState {
-            format: config.format,
-            blend: Some(wgpu::BlendState::REPLACE),
-            write_mask: wgpu::ColorWrites::ALL,
-          }],
-        }),
-        primitive: wgpu::PrimitiveState {
-          topology: wgpu::PrimitiveTopology::TriangleList,
-          strip_index_format: None,
-          front_face: wgpu::FrontFace::Ccw,
-          cull_mode: Some(wgpu::Face::Back),
-          // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-          polygon_mode: wgpu::PolygonMode::Fill,
-          ..Default::default()
-        },
-        depth_stencil: None,
-        multisample: wgpu::MultisampleState {
-          count: 1,
-          mask: !0,
-          alpha_to_coverage_enabled: false,
-        },
-        multiview: None,
-      });
-    let use_color = true;
+
+    let is_triangle = false;
 
     Self {
       window,
@@ -148,8 +143,11 @@ impl Renderer {
       config,
       size,
       render_pipeline,
-      ch_render_pipeline,
-      use_color,
+      vertex_buffer,
+      num_vertices,
+      index_buffer,
+      num_indices,
+      is_triangle,
     }
   }
 
@@ -166,22 +164,43 @@ impl Renderer {
   }
   pub fn input(&mut self, event: &WindowEvent) -> bool {
     match event {
-      WindowEvent::KeyboardInput {
-        input:
-        KeyboardInput {
-          state,
-          virtual_keycode: Some(VirtualKeyCode::Space),
-          ..
-        },
-        ..
-      } => {
-        self.use_color = *state == ElementState::Released;
-        true
-      }
+      /*      WindowEvent::KeyboardInput {
+              input:
+              KeyboardInput {
+                state,
+                virtual_keycode: Some(VirtualKeyCode::Space),
+                ..
+              },
+              ..
+            } => {
+              self.use_color = *state == ElementState::Released;
+              true
+            }*/
       _ => false,
     }
   }
-  pub fn update(&mut self) {}
+  pub fn update(&mut self) {
+    self.is_triangle = !self.is_triangle;
+    if self.is_triangle {
+      let vertex_buffer = self.device.create_buffer_init(
+        &wgpu::util::BufferInitDescriptor {
+          label: Some("Vertex Buffer"),
+          contents: bytemuck::cast_slice(buffer::TRIANGLE_VERTICES),
+          usage: wgpu::BufferUsages::VERTEX,
+        }
+      );
+      self.vertex_buffer = vertex_buffer;
+    } else {
+      let vertex_buffer = self.device.create_buffer_init(
+        &wgpu::util::BufferInitDescriptor {
+          label: Some("Vertex Buffer"),
+          contents: bytemuck::cast_slice(buffer::PENTAGON_VERTICES),
+          usage: wgpu::BufferUsages::VERTEX,
+        }
+      );
+      self.vertex_buffer = vertex_buffer;
+    }
+  }
   pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
     let output = self.surface.get_current_texture()?;
     let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -190,6 +209,7 @@ impl Renderer {
     });
 
     {
+      // Render Block
       let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("Render Pass"),
         color_attachments: &[
@@ -209,12 +229,18 @@ impl Renderer {
           }],
         depth_stencil_attachment: None,
       });
-      render_pass.set_pipeline(if self.use_color {
-        &self.render_pipeline
+      // 1.Layout을 설정한 pipeline을 지정.
+      render_pass.set_pipeline(&self.render_pipeline);
+      // 2. render pass에 미리 정의된 vertex_buffer를 입력
+      render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+      render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+
+      if self.is_triangle {
+        render_pass.draw(0..self.num_vertices, 0..1);
       } else {
-        &self.ch_render_pipeline
-      });
-      render_pass.draw(0..3, 0..1);
+        render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+      }
+      // render_pass.draw(0..self.num_vertices, 0..1);
     }
 
     // submit will accept anything that implements IntoIter

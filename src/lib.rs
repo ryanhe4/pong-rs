@@ -1,4 +1,5 @@
 mod renderer;
+mod buffer;
 
 use env_logger::Env;
 use log::info;
