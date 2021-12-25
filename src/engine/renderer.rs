@@ -8,9 +8,9 @@ use log::{info};
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::event::{WindowEvent};
-use crate::{WIDTH, HEIGHT, buffer};
-use crate::buffer::{PENTAGON_INDICES, TRIANGLE_VERTICES};
-use crate::component::*;
+use crate::engine::component::*;
+use crate::engine::{buffer, WIDTH, HEIGHT};
+use crate::engine::component::{Point, Rectangle};
 
 // Renderer Struct Interface
 pub struct Renderer {
@@ -21,7 +21,7 @@ pub struct Renderer {
   pub(crate) size: winit::dpi::PhysicalSize<u32>,
   pub window: Window,
   render_pipeline: wgpu::RenderPipeline,
-  rect: Rectangle,
+  render_util: RenderUtil,
 }
 
 impl Renderer {
@@ -59,7 +59,7 @@ impl Renderer {
 
     let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
       label: Some("Shader"),
-      source: wgpu::ShaderSource::Wgsl(include_str!("shader/shader.wgsl").into()),
+      source: wgpu::ShaderSource::Wgsl(include_str!("../shader/shader.wgsl").into()),
     });
 
     let render_pipeline_layout =
@@ -109,8 +109,7 @@ impl Renderer {
       }),
       multiview: None,
     });
-    let rect: Rectangle = Rectangle::new(&device, Point { x: 640.0, y: 0.0 }, 100, 100, None);
-
+    let render_util = RenderUtil::new();
     Self {
       window,
       surface,
@@ -119,7 +118,7 @@ impl Renderer {
       config,
       size,
       render_pipeline,
-      rect,
+      render_util,
     }
   }
 
@@ -183,10 +182,13 @@ impl Renderer {
       // 1.Layout을 설정한 pipeline을 지정.
       render_pass.set_pipeline(&self.render_pipeline);
       // 2. render pass에 미리 정의된 vertex_buffer를 입력
-      // draw_rect(&mut render_pass, &self.rect);
-      draw_rect(&mut render_pass, &rect);
-      draw_rect(&mut render_pass, &rect2);
-      // render_pass.draw(0..self.num_vertices, 0..1);
+
+      // 1. confirm Scene
+      // 2. input
+      // 3. update
+      // 4. draw
+      RenderUtil::draw_rect(&mut render_pass, &rect);
+      RenderUtil::draw_rect(&mut render_pass, &rect2);
     }
 
     // submit will accept anything that implements IntoIter
@@ -197,9 +199,29 @@ impl Renderer {
   }
 }
 
-fn draw_rect<'a>(render_pass: &mut wgpu::RenderPass<'a>, rect: &'a Rectangle) {
-  render_pass.set_vertex_buffer(0, rect.vertex_buffer.slice(..));
-  render_pass.set_index_buffer(rect.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-  render_pass.draw_indexed(0..rect.num_indices, 0, 0..1);
-  // todo!("Inside Render Or Other")
+struct RenderUtil {
+  is_draw_grid: bool,
+}
+
+impl RenderUtil {
+  pub fn new() -> Self {
+    is_draw_grid = true;
+    Self { is_draw_grid }
+  }
+
+  pub fn draw_rect<'a>(render_pass: &mut wgpu::RenderPass<'a>, rect: &'a Rectangle) {
+    render_pass.set_vertex_buffer(0, rect.vertex_buffer.slice(..));
+    render_pass.set_index_buffer(rect.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+    render_pass.draw_indexed(0..rect.num_indices, 0, 0..1);
+  }
+
+  pub fn draw_grid<'a>(&mut self, render_pass: &mut wgpu::RenderPass<'a>) {
+    if self.is_draw_grid {
+      // todo!(draw index instances)
+    }
+  }
+
+  pub fn switch_draw_grid(&mut self) {
+    self.is_draw_grid = !self.is_draw_grid;
+  }
 }

@@ -1,8 +1,8 @@
 use log::info;
 use wgpu::util::DeviceExt;
 
-use crate::buffer;
-use crate::buffer::Vertex;
+use crate::engine::buffer;
+use crate::engine::buffer::Vertex;
 
 pub struct Point {
   pub x: f32,
@@ -50,6 +50,12 @@ impl Rectangle {
       point,
       width,
       height,
+    }
+  }
+  pub fn get_point(&self) -> Point {
+    Point {
+      x: self.point.x,
+      y: self.point.y,
     }
   }
 }

@@ -1,21 +1,13 @@
 mod renderer;
 mod buffer;
 mod component;
-mod scene;
 
-use env_logger::Env;
 use winit::{
   event::{Event, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode},
   event_loop::{ControlFlow, EventLoop},
 };
 
 pub async fn run() {
-  let env = Env::default()
-    .filter_or("MY_LOG_LEVEL", "pong")
-    .write_style_or("MY_LOG_STYLE", "info");
-
-  env_logger::init_from_env(env);
-
   let event_loop = EventLoop::new();
   let mut renderer = pollster::block_on(renderer::Renderer::new(&event_loop));
   event_loop.run(move |event, _, control_flow|
